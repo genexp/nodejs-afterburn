@@ -23,11 +23,12 @@ stdin.addListener("data", function(data) {
 
         process.exit(1);
     } else {
-        let headerLength = index + keyBuffer.byteLength; // received.length - (index + keyBuffer.byteLength);
+        
+        let headerLength = index + keyBuffer.length; // received.length - (index + keyBuffer.byteLength);
 
         let header = new Buffer(headerLength);
         currentRequest.received.copy(header, 0, 0, headerLength);
-
+        
         let parsedHeader = parseHeader(header.toString());
         let bodyLength = parseInt(parsedHeader["Content-Length"]);
 
@@ -38,20 +39,19 @@ stdin.addListener("data", function(data) {
             console.log(currentRequest.received.length, headerLength, bodyLength)
             process.exit(1)
         }
-
-        console.log("Body (expected): " + bodyLength);
-        console.log("Header (actual): " + headerLength);
-        console.log("Body (actual): " + (currentRequest.received.length - headerLength));
-
-        // console.log(currentRequest.received.toString());
         let body = new Buffer(bodyLength);
-        //buffer.copy(target, targetStart, sourceStart, sourceEnd);
-        currentRequest.received.copy(body, 0, index, bodyLength);
-        console.log(body.toString());
 
-        handler(body.toString(), (err, output) => {
-            let result = addHttp(output);
-            process.stdout.write(result);
+        currentRequest.received.copy(body, 0, headerLength, headerLength+bodyLength);
+
+        handler(body.toString(), (err, res) => {
+            let result;
+            if(isArray(res) || isObject(res)) {
+                result = JSON.stringify(res);
+            } else {
+                result = res;
+            }
+
+            let done = process.stdout.write(addHttp(result));
 
             resetRequest(currentRequest);
         });
@@ -59,11 +59,20 @@ stdin.addListener("data", function(data) {
 });
 
 function addHttp(content) {
-    return new Buffer("HTTP/1.1 200 OK\r\n" +
-        "Content-Length: " + content.length + "\r\n" +
-        "\r\n" +
-        content);
+    return new Buffer("HTTP/1.1 200 OK\r\n"+
+    "Content-Length: "+ content.length + "\r\n" +
+    "\r\n" + 
+    content);
 }
+
+let isArray = (a) => {
+    return (!!a) && (a.constructor === Array);
+};
+
+let isObject = (a) => {
+    return (!!a) && (a.constructor === Object);
+};
+
 
 function parseHeader(raw) {
     let map = {};
