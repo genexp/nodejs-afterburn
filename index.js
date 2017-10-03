@@ -34,19 +34,20 @@ stdin.addListener("data", function(data) {
         currentRequest.contentLength =  bodyLength;
         currentRequest.header = parsedHeader;
 
-        let body = new Buffer(parseInt(bodyLength));
-
         if (bodyLength + headerLength < currentRequest.received.length) {
             console.log(currentRequest.received.length, headerLength, bodyLength)
             process.exit(1)
         }
 
-        currentRequest.received.copy(body, index, 0, bodyLength);
         console.log("Body (expected): " + bodyLength);
         console.log("Header (actual): " + headerLength);
-        console.log("Body (actual): " + currentRequest.received.length - headerLength);
-        console.log(bodyLength, headerLength, bodyLength + headerLength, currentRequest.received.length);
-        // console.log(body.toString());
+        console.log("Body (actual): " + (currentRequest.received.length - headerLength));
+
+        // console.log(currentRequest.received.toString());
+        let body = new Buffer(bodyLength);
+        //buffer.copy(target, targetStart, sourceStart, sourceEnd);
+        currentRequest.received.copy(body, 0, index, bodyLength);
+        console.log(body.toString());
 
         handler(body.toString(), (err, output) => {
             let result = addHttp(output);
