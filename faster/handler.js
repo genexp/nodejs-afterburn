@@ -1,5 +1,5 @@
 "use strict"
 
 module.exports = (context, callback) => {
-    callback(undefined, {status: "done.. but really fast"});
+    callback(undefined, {status: "You said: " + context});
 }
